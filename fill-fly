@@ -11,7 +11,7 @@ gui.ResetOnSpawn = false
 gui.Parent = (gethui and gethui()) or CoreGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 130, 0, 120)
+frame.Size = UDim2.new(0, 130, 0, 100)
 frame.Position = UDim2.new(0, 10, 0, 10)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
