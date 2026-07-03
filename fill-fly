@@ -1,0 +1,171 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = (gethui and gethui()) or CoreGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 130, 0, 120)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+
+-- HEADER
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 20)
+header.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+header.BorderSizePixel = 0
+header.Parent = frame
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, 0, 1, 0)
+label.Text = "i11ysha panel"
+label.TextScaled = true
+label.TextColor3 = Color3.fromRGB(255, 255, 255)
+label.BackgroundTransparency = 1
+label.Parent = header
+
+-- FLING (отдельно сверху)
+local flingBtn = Instance.new("TextButton")
+flingBtn.Size = UDim2.new(0, 110, 0, 20)
+flingBtn.Position = UDim2.new(0, 10, 0, 25)
+flingBtn.Text = "FLING"
+flingBtn.TextScaled = true
+flingBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+flingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+flingBtn.Parent = frame
+
+-- SPEED
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(0, 110, 0, 20)
+textBox.Position = UDim2.new(0, 10, 0, 50)
+textBox.Text = "Speed"
+textBox.TextScaled = true
+textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.Parent = frame
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 110, 0, 20)
+button.Position = UDim2.new(0, 10, 0, 75)
+button.Text = "Default"
+button.TextScaled = true
+button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Parent = frame
+
+-- ПЕРЕТАСКИВАНИЕ
+local dragging = false
+local dragStart, startPos
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- SPEED ЛОГИКА
+local speed = 16
+local defaultSpeed = 16
+
+local function setSpeed(s)
+    speed = s
+    local char = player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = speed
+    end
+end
+
+textBox.FocusLost:Connect(function(enter)
+    if enter then
+        local n = tonumber(textBox.Text)
+        if n then
+            setSpeed(n)
+        end
+    end
+end)
+
+button.MouseButton1Click:Connect(function()
+    setSpeed(defaultSpeed)
+    textBox.Text = tostring(defaultSpeed)
+end)
+
+RunService.Stepped:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = speed
+    end
+end)
+
+-- FLING ЛОГИКА
+local flingEnabled = false
+local lastPos
+
+local function fling()
+    local m = 0.1
+    while flingEnabled do
+        RunService.Heartbeat:Wait()
+        local h = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if h then
+            if lastPos and (h.Position - lastPos).Magnitude > 10 then
+                lastPos = h.Position
+                continue
+            end
+            lastPos = h.Position
+
+            local v = h.Velocity
+            h.Velocity = v * 1e4 + Vector3.new(0, 1e4, 0)
+            RunService.RenderStepped:Wait()
+            h.Velocity = v
+            RunService.Stepped:Wait()
+            h.Velocity = v + Vector3.new(0, m, 0)
+            m = -m
+        end
+    end
+end
+
+local function toggleFling()
+    flingEnabled = not flingEnabled
+    flingBtn.Text = flingEnabled and "FLING ON" or "FLING"
+    if flingEnabled then
+        task.spawn(fling)
+    end
+end
+
+flingBtn.MouseButton1Click:Connect(toggleFling)
+
+-- КЛАВИШИ
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+
+    if input.KeyCode == Enum.KeyCode.T then
+        toggleFling()
+    end
+
+    if input.KeyCode == Enum.KeyCode.V then
+        gui.Enabled = not gui.Enabled
+    end
+end)
